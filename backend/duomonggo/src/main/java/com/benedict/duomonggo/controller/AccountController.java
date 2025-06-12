@@ -2,11 +2,12 @@ package com.benedict.duomonggo.controller;
 
 import com.benedict.duomonggo.model.*;
 import com.benedict.duomonggo.service.AccountService;
-import com.benedict.duomonggo.service.UserProgressService;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
@@ -14,12 +15,10 @@ import java.util.*;
 @RequestMapping("/accounts")
 public class AccountController {
     private final AccountService accountService;
-    private final UserProgressService userProgressService;
 
     @Autowired
-    public AccountController(AccountService accountService, UserProgressService userProgressService) {
+    public AccountController(AccountService accountService) {
         this.accountService = accountService;
-        this.userProgressService = userProgressService;
     }
 
     @GetMapping("/{id}")
@@ -42,7 +41,13 @@ public class AccountController {
             String username = (String) payload.get("username");
             String password = (String) payload.get("password");
             String email = (String) payload.get("email");
-            Role role = Role.valueOf(((String) payload.get("role")).toUpperCase());
+
+            Role role;
+            if (payload.get("role") != null) {
+                role = Role.valueOf(((String) payload.get("role")).toUpperCase());
+            } else {
+                role = Role.USER;
+            }
 
             if (accountService.getAccountByUsername(username) != null) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -87,48 +92,38 @@ public class AccountController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<BaseResponse<Account>> updateAccount(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+    @PutMapping(value = "/{id}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<BaseResponse<Account>> updateAccount(
+            @PathVariable Long id,
+            @RequestParam(value = "username", required = false) String username,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "password", required = false) String password,
+            @RequestParam(value = "image", required = false) MultipartFile image) {
         try {
             Optional<Account> optionalAccount = accountService.getAccountById(id);
             if (optionalAccount.isPresent()) {
-                String username = null;
-                String email = null;
-                Role role = null;
-                Integer exp = null;
-
-                if (payload.containsKey("username")) {
-                    username = (String) payload.get("username");
-                    Account existingWithUsername = accountService.getAccountByUsername(username);
-                    if (existingWithUsername != null && !existingWithUsername.getId().equals(id)) {
+                if (username != null && !username.isEmpty()) {
+                    Account existingAccount = accountService.getAccountByUsername(username);
+                    if (existingAccount != null && !existingAccount.getId().equals(id)) {
                         return ResponseEntity.status(HttpStatus.CONFLICT)
                                 .body(new BaseResponse<>(false, "Username already exists", null));
                     }
                 }
 
-                if (payload.containsKey("email")) {
-                    email = (String) payload.get("email");
-                    Account existingWithEmail = accountService.getAccountByEmail(email);
-                    if (existingWithEmail != null && !existingWithEmail.getId().equals(id)) {
+                if (email != null && !email.isEmpty()) {
+                    Account existingAccount = accountService.getAccountByEmail(email);
+                    if (existingAccount != null && !existingAccount.getId().equals(id)) {
                         return ResponseEntity.status(HttpStatus.CONFLICT)
                                 .body(new BaseResponse<>(false, "Email already exists", null));
                     }
                 }
 
-                if (payload.containsKey("role")) {
-                    role = Role.valueOf(((String) payload.get("role")).toUpperCase());
-                }
+                Account account = optionalAccount.get();
+                Role role = account.getRole();
+                Integer exp = account.getExp();
 
-                if (payload.containsKey("exp")) {
-                    exp = Integer.parseInt(payload.get("exp").toString());
-                }
+                Account updatedAccount = accountService.updateAccount(id, username, email, role, exp, image, password);
 
-                if (payload.containsKey("password")) {
-                    String newPassword = (String) payload.get("password");
-                    accountService.updatePassword(id, newPassword);
-                }
-
-                Account updatedAccount = accountService.updateAccount(id, username, email, role, exp);
                 return ResponseEntity.ok(new BaseResponse<>(true, "Account updated successfully", updatedAccount));
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -153,40 +148,6 @@ public class AccountController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new BaseResponse<>(false, "Failed to delete account: " + e.getMessage(), null));
-        }
-    }
-
-    @GetMapping("/admin/dashboard")
-    public ResponseEntity<BaseResponse<Map<String, Object>>> getAdminDashboard() {
-        try {
-            List<Account> accounts = accountService.getAllAccounts();
-
-            // Extract relevant information for the dashboard
-            List<Map<String, Object>> userList = new ArrayList<>();
-            for (Account account : accounts) {
-                Map<String, Object> userInfo = new HashMap<>();
-                userInfo.put("id", account.getId());
-                userInfo.put("username", account.getUsername());
-                userInfo.put("email", account.getEmail());
-                userInfo.put("exp", account.getExp());
-                userInfo.put("role", account.getRole());
-                userInfo.put("createdAt", account.getCreatedAt());
-
-                // Add user progress stats if needed
-                long completedCourses = userProgressService.getCompletedCoursesCount(account.getId());
-                userInfo.put("completedCourses", completedCourses);
-
-                userList.add(userInfo);
-            }
-
-            Map<String, Object> dashboardData = new HashMap<>();
-            dashboardData.put("totalUsers", accounts.size());
-            dashboardData.put("users", userList);
-
-            return ResponseEntity.ok(new BaseResponse<>(true, "Dashboard data retrieved successfully", dashboardData));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new BaseResponse<>(false, "Failed to retrieve dashboard data: " + e.getMessage(), null));
         }
     }
 }

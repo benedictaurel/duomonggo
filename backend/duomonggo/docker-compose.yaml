@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+
+    ports:
+      - "8091:8091"
+    environment:
+      - PG_CONNECTION_STRING=jdbc:postgresql://ep-frosty-band-a1jeciw7.ap-southeast-1.aws.neon.tech/duomonggo?user=duomonggo_owner&password=npg_vh5mFBaA9tis&sslmode=require
+      - DB_PORT=8091
+    container_name: duomonggo-app
+    restart: unless-stopped
+    networks:
+      - duomonggo-network
+
+networks:
+  duomonggo-network:
+    driver: bridge
+

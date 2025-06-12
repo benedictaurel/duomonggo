@@ -52,14 +52,12 @@ public class QuestionService {
     @Transactional
     public Question createQuestion(String content, QuestionType questionType, String explanation,
                                   Long courseId, Integer orderNumber) {
-        // Call the more comprehensive method with null choices and image
         return createQuestion(content, questionType, explanation, courseId, orderNumber, null, null);
     }
 
     @Transactional
     public Question createQuestion(String content, QuestionType questionType, String explanation,
                                   Long courseId, Integer orderNumber, List<Map<String, Object>> choices) {
-        // Call the more comprehensive method with null image
         return createQuestion(content, questionType, explanation, courseId, orderNumber, choices, null);
     }
 
@@ -72,7 +70,6 @@ public class QuestionService {
             if (courseOptional.isPresent()) {
                 Course course = courseOptional.get();
 
-                // Upload image if provided
                 String imageUrl = null;
                 if (imageFile != null && !imageFile.isEmpty()) {
                     imageUrl = cloudinaryService.uploadImage(imageFile, "questions");
@@ -81,7 +78,6 @@ public class QuestionService {
                 Question question = new Question(content, questionType, explanation, course, orderNumber, imageUrl);
                 question = questionRepository.save(question);
 
-                // If it's a multiple choice question and choices are provided
                 if (questionType == QuestionType.MULTIPLE_CHOICE && choices != null && !choices.isEmpty()) {
                     for (Map<String, Object> choiceData : choices) {
                         String choiceContent = (String) choiceData.get("content");
@@ -104,21 +100,6 @@ public class QuestionService {
 
     @Transactional
     public Question updateQuestion(Long id, String content, QuestionType questionType,
-                                  String explanation, Integer orderNumber) {
-        // Call the more comprehensive method with null choices and image
-        return updateQuestion(id, content, questionType, explanation, orderNumber, null, null);
-    }
-
-    @Transactional
-    public Question updateQuestion(Long id, String content, QuestionType questionType,
-                                  String explanation, Integer orderNumber,
-                                  List<Map<String, Object>> choices) {
-        // Call the more comprehensive method with null image
-        return updateQuestion(id, content, questionType, explanation, orderNumber, choices, null);
-    }
-
-    @Transactional
-    public Question updateQuestion(Long id, String content, QuestionType questionType,
                                   String explanation, Integer orderNumber,
                                   List<Map<String, Object>> choices, MultipartFile imageFile) {
         try {
@@ -130,23 +111,17 @@ public class QuestionService {
                 question.setExplanation(explanation);
                 question.setOrderNumber(orderNumber);
 
-                // Handle image update if provided
                 if (imageFile != null && !imageFile.isEmpty()) {
-                    // If there was a previous image, we could delete it here if needed
-                    // cloudinaryService.deleteImage(previousImagePublicId);
+//                     cloudinaryService.deleteImage(previousImagePublicId);
 
-                    // Upload the new image
                     String imageUrl = cloudinaryService.uploadImage(imageFile, "questions");
                     question.setImageUrl(imageUrl);
                 }
 
-                // If it's a multiple choice question and choices are provided
                 if (questionType == QuestionType.MULTIPLE_CHOICE && choices != null) {
-                    // Clear existing answers for this question
                     answerRepository.deleteByQuestion_Id(question.getId());
                     question.getAnswers().clear();
 
-                    // Add the new choices as answers
                     for (Map<String, Object> choiceData : choices) {
                         String choiceContent = (String) choiceData.get("content");
                         Boolean isCorrect = (Boolean) choiceData.get("isCorrect");
@@ -166,20 +141,13 @@ public class QuestionService {
 
     @Transactional
     public void deleteQuestion(Long id) {
-        // Optionally get the question to delete its image before deleting the question
         Optional<Question> question = questionRepository.findById(id);
         question.ifPresent(q -> {
             if (q.getImageUrl() != null) {
-                // Extract public ID from URL and delete from Cloudinary
-                // This would require parsing the URL to get the public ID
-                // cloudinaryService.deleteImage(publicId);
+//                 cloudinaryService.deleteImage(publicId);
             }
         });
 
         questionRepository.deleteById(id);
-    }
-
-    public long countQuestionsByCourse(Long courseId) {
-        return questionRepository.countByCourse_Id(courseId);
     }
 }

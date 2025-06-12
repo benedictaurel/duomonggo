@@ -2,10 +2,12 @@ package com.benedict.duomonggo.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "courses")
@@ -24,6 +26,13 @@ public class Course extends Serializable {
     @Column(name = "difficulty", nullable = false)
     private Difficulty difficulty;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "course_type", nullable = false)
+    private CourseType courseType;
+
+    @Column(name = "deadline")
+    private LocalDateTime deadline;
+
     @Column(name = "exp_reward", nullable = false)
     private Integer expReward;
 
@@ -33,21 +42,36 @@ public class Course extends Serializable {
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions = new ArrayList<>();
+    
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Enrollment> enrollments = new ArrayList<>();
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserProgress> userProgresses = new ArrayList<>();
+    @JsonIgnore
+    private List<Multiplayer> multiplayerSessions = new ArrayList<>();
 
     public Course() {
         this.title = "";
         this.description = "";
         this.difficulty = Difficulty.EASY;
+        this.courseType = CourseType.SINGLEPLAYER;
         this.expReward = 0;
     }
 
-    public Course(String title, String description, Difficulty difficulty, Integer expReward) {
+    public Course(String title, String description, Difficulty difficulty, CourseType courseType, Integer expReward) {
         this.title = title;
         this.description = description;
         this.difficulty = difficulty;
+        this.courseType = courseType;
+        this.expReward = expReward;
+    }
+
+    public Course(String title, String description, Difficulty difficulty, CourseType courseType, LocalDateTime deadline, Integer expReward) {
+        this.title = title;
+        this.description = description;
+        this.difficulty = difficulty;
+        this.courseType = courseType;
+        this.deadline = deadline;
         this.expReward = expReward;
     }
 
@@ -79,6 +103,22 @@ public class Course extends Serializable {
         this.difficulty = difficulty;
     }
 
+    public CourseType getCourseType() {
+        return courseType;
+    }
+
+    public void setCourseType(CourseType courseType) {
+        this.courseType = courseType;
+    }
+
+    public LocalDateTime getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDateTime deadline) {
+        this.deadline = deadline;
+    }
+
     public Integer getExpReward() {
         return expReward;
     }
@@ -108,12 +148,29 @@ public class Course extends Serializable {
         questions.remove(question);
         question.setCourse(null);
     }
-
-    public List<UserProgress> getUserProgresses() {
-        return userProgresses;
+    
+    public List<Enrollment> getEnrollments() {
+        return enrollments;
+    }
+    
+    public void setEnrollments(List<Enrollment> enrollments) {
+        this.enrollments = enrollments;
     }
 
-    public void setUserProgresses(List<UserProgress> userProgresses) {
-        this.userProgresses = userProgresses;
+    @JsonProperty("multiplayerSessionIds")
+    public List<Long> getMultiplayerSessionIds() {
+        List<Long> ids = new ArrayList<>();
+        for (Multiplayer multiplayer : multiplayerSessions) {
+            ids.add(multiplayer.getId());
+        }
+        return ids;
+    }
+
+    public List<Multiplayer> getMultiplayerSessions() {
+        return multiplayerSessions;
+    }
+
+    public void setMultiplayerSessions(List<Multiplayer> multiplayerSessions) {
+        this.multiplayerSessions = multiplayerSessions;
     }
 }

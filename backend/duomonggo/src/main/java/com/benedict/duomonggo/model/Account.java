@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "account")
@@ -23,6 +21,9 @@ public class Account extends Serializable {
     @Column(name = "email", nullable = false, unique = true)
     String email;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     Role role;
@@ -34,23 +35,22 @@ public class Account extends Serializable {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserProgress> userProgresses = new ArrayList<>();
-
     public Account() {
         this.username = "";
         this.password = "";
         this.email = "";
         this.role = Role.USER;
         this.exp = 0;
+        this.imageUrl = null;
     }
 
-    public Account(String username, String password, String email, Role role, Integer exp) {
+    public Account(String username, String password, String email, Role role, Integer exp, String imageUrl) {
         this.username = username;
         this.password = password;
         this.email = email;
         this.role = role;
         this.exp = exp;
+        this.imageUrl = imageUrl;
     }
 
     public Long getId() {
@@ -81,6 +81,14 @@ public class Account extends Serializable {
         this.email = email;
     }
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
     public Role getRole() {
         return role;
     }
@@ -103,23 +111,5 @@ public class Account extends Serializable {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public List<UserProgress> getUserProgresses() {
-        return userProgresses;
-    }
-
-    public void setUserProgresses(List<UserProgress> userProgresses) {
-        this.userProgresses = userProgresses;
-    }
-
-    public void addUserProgress(UserProgress userProgress) {
-        userProgresses.add(userProgress);
-        userProgress.setAccount(this);
-    }
-
-    public void removeUserProgress(UserProgress userProgress) {
-        userProgresses.remove(userProgress);
-        userProgress.setAccount(null);
     }
 }

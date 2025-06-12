@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -106,11 +105,5 @@ public class QuestionController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new BaseResponse<>(false, "Failed to delete question: " + e.getMessage(), null));
         }
-    }
-
-    @GetMapping("/count/course/{courseId}")
-    public ResponseEntity<BaseResponse<Long>> countQuestionsByCourse(@PathVariable Long courseId) {
-        long count = questionService.countQuestionsByCourse(courseId);
-        return ResponseEntity.ok(new BaseResponse<>(true, "Question count retrieved successfully", count));
     }
 }
